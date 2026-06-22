@@ -984,7 +984,7 @@ let currentProduct = null;
 // ─────────────────────────────────────────────────────
 async function loadCatalog() {
   try {
-    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:N502`);
+    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:O502`);
     const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
     const res   = await fetch(url);
     const data  = await res.json();
@@ -994,27 +994,27 @@ async function loadCatalog() {
       return;
     }
 
-    // Col N (index 13) = Show on Page?
-    // Col J (index 9)  = Stock Status
-    // Col H (index 7)  = Short Title
-    // Col L (index 11) = Sales Count
+    // Col A(0)=EAN, B(1)=Brand, C(2)=ASIN, D(3)=SKU, E(4)=Category
+    // Col F(5)=Image formula, G(6)=Image URL (plain text), H(7)=Product Title
+    // Col I(8)=Short Title, J(9)=Available QTY, K(10)=Stock Status
+    // Col L(11)=Stock Source, M(12)=Sales Count, N(13)=Eligible, O(14)=Show on Page?
     products = data.values
-      .filter(row => row[13] && row[13].includes('YES'))
+      .filter(row => row[14] && row[14].includes('YES'))
       .map(row => ({
         ean:        row[0]  || '',
         brand:      row[1]  || 'Botanic Hearth',
         asin:       row[2]  || '',
         sku:        row[3]  || '',
         category:   row[4]  || 'Personal Care',
-        image:      row[5]  || '',
-        title:      row[6]  || '',
-        shortTitle: row[7]  || row[6] || '',
-        availQty:   parseInt(row[8])  || 0,
-        stockStatus:row[9]  || '',
-        salesCount: parseInt(row[11]) || 0,
-        eligible:   row[12] || '',
-        show:       row[13] || '',
-        inStock:    row[9]  && row[9].includes('In Stock'),
+        image:      row[6]  || '',
+        title:      row[7]  || '',
+        shortTitle: row[8]  || row[7] || '',
+        availQty:   parseInt(row[9])  || 0,
+        stockStatus:row[10] || '',
+        salesCount: parseInt(row[12]) || 0,
+        eligible:   row[13] || '',
+        show:       row[14] || '',
+        inStock:    row[10] && row[10].includes('In Stock'),
       }));
 
     renderFilters();
