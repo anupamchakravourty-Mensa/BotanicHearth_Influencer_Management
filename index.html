@@ -984,7 +984,7 @@ let currentProduct = null;
 // ─────────────────────────────────────────────────────
 async function loadCatalog() {
   try {
-    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:M502`);
+    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:N502`);
     const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
     const res   = await fetch(url);
     const data  = await res.json();
@@ -994,9 +994,12 @@ async function loadCatalog() {
       return;
     }
 
-    // Filter only rows where Show on Page = ✅ YES
+    // Col N (index 13) = Show on Page?
+    // Col J (index 9)  = Stock Status
+    // Col H (index 7)  = Short Title
+    // Col L (index 11) = Sales Count
     products = data.values
-      .filter(row => row[12] && row[12].includes('YES'))
+      .filter(row => row[13] && row[13].includes('YES'))
       .map(row => ({
         ean:        row[0]  || '',
         brand:      row[1]  || 'Botanic Hearth',
@@ -1008,9 +1011,9 @@ async function loadCatalog() {
         shortTitle: row[7]  || row[6] || '',
         availQty:   parseInt(row[8])  || 0,
         stockStatus:row[9]  || '',
-        salesCount: parseInt(row[10]) || 0,
-        eligible:   row[11] || '',
-        show:       row[12] || '',
+        salesCount: parseInt(row[11]) || 0,
+        eligible:   row[12] || '',
+        show:       row[13] || '',
         inStock:    row[9]  && row[9].includes('In Stock'),
       }));
 
