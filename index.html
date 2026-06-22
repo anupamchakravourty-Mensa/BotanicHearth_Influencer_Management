@@ -305,6 +305,14 @@ header {
   line-height: 1.35;
   margin-bottom: 10px;
 }
+.card-volume {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sage);
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
 .card-status {
   display: flex;
   align-items: center;
@@ -539,8 +547,20 @@ header {
 .modal-asin {
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 20px;
+  margin-bottom: 6px;
   letter-spacing: 0.5px;
+}
+.modal-volume {
+  display: inline-block;
+  background: var(--card);
+  color: var(--sage);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
 .modal-label {
   font-size: 11px;
@@ -886,6 +906,7 @@ footer span { color: var(--gold); }
       <div class="modal-category" id="modalCategory"></div>
       <div class="modal-title" id="modalTitle"></div>
       <div class="modal-asin" id="modalAsin"></div>
+      <div class="modal-volume" id="modalVolume"></div>
       <div class="modal-label">Availability</div>
       <div class="modal-stock-badge in" id="modalStock">✅ In Stock</div>
       <div class="modal-actions">
@@ -984,7 +1005,7 @@ let currentProduct = null;
 // ─────────────────────────────────────────────────────
 async function loadCatalog() {
   try {
-    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:O502`);
+    const range = encodeURIComponent(`${CATALOG_SHEET}!A2:P502`);
     const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
     const res   = await fetch(url);
     const data  = await res.json();
@@ -995,11 +1016,12 @@ async function loadCatalog() {
     }
 
     // Col A(0)=EAN, B(1)=Brand, C(2)=ASIN, D(3)=SKU, E(4)=Category
-    // Col F(5)=Image formula, G(6)=Image URL (plain text), H(7)=Product Title
-    // Col I(8)=Short Title, J(9)=Available QTY, K(10)=Stock Status
-    // Col L(11)=Stock Source, M(12)=Sales Count, N(13)=Eligible, O(14)=Show on Page?
+    // Col F(5)=Image formula, G(6)=Image URL, H(7)=Product Title
+    // Col I(8)=Short Title, J(9)=Volume, K(10)=Available QTY
+    // Col L(11)=Stock Status, M(12)=Stock Source, N(13)=Sales Count
+    // Col O(14)=Eligible, P(15)=Show on Page?
     products = data.values
-      .filter(row => row[14] && row[14].includes('YES'))
+      .filter(row => row[15] && row[15].includes('YES'))
       .map(row => ({
         ean:        row[0]  || '',
         brand:      row[1]  || 'Botanic Hearth',
@@ -1009,12 +1031,13 @@ async function loadCatalog() {
         image:      row[6]  || '',
         title:      row[7]  || '',
         shortTitle: row[8]  || row[7] || '',
-        availQty:   parseInt(row[9])  || 0,
-        stockStatus:row[10] || '',
-        salesCount: parseInt(row[12]) || 0,
-        eligible:   row[13] || '',
-        show:       row[14] || '',
-        inStock:    row[10] && row[10].includes('In Stock'),
+        volume:     row[9]  || '',
+        availQty:   parseInt(row[10]) || 0,
+        stockStatus:row[11] || '',
+        salesCount: parseInt(row[13]) || 0,
+        eligible:   row[14] || '',
+        show:       row[15] || '',
+        inStock:    row[11] && row[11].includes('In Stock'),
       }));
 
     renderFilters();
@@ -1083,6 +1106,7 @@ function renderCatalog(items) {
         <div class="card-body">
           <div class="card-category">${p.category}</div>
           <div class="card-title">${p.shortTitle || p.title}</div>
+          ${p.volume ? `<div class="card-volume">${p.volume}</div>` : ''}
           <div class="card-status">
             <span class="status-dot ${p.inStock ? 'in' : 'out'}"></span>
             <span style="font-size:12px;color:var(--muted)">
@@ -1126,6 +1150,12 @@ function openModal(ean) {
   document.getElementById('modalCategory').textContent = p.category;
   document.getElementById('modalTitle').textContent     = p.shortTitle || p.title;
   document.getElementById('modalAsin').textContent      = p.asin ? `ASIN: ${p.asin}` : '';
+
+  const volEl = document.getElementById('modalVolume');
+  if (volEl) {
+    volEl.textContent = p.volume || '';
+    volEl.style.display = p.volume ? 'inline-block' : 'none';
+  }
 
   const stockBadge = document.getElementById('modalStock');
   stockBadge.className = `modal-stock-badge ${p.inStock ? 'in' : 'out'}`;
