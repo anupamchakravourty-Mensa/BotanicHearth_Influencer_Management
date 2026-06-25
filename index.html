@@ -940,6 +940,105 @@ footer span { color: var(--gold); }
   .section-title { font-size: 24px; }
 }
 
+
+/* ── LOADING OVERLAY ─────────────────────────────── */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0F1F14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#loadingOverlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.loading-float-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.float-img {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 16px;
+  opacity: 0.12;
+  filter: blur(1px) saturate(0.6);
+  animation: floatDrift linear infinite;
+  will-change: transform;
+}
+@keyframes floatDrift {
+  0%   { transform: translateY(110vh) rotate(var(--rot-start)) scale(0.85); opacity: 0; }
+  5%   { opacity: 0.12; }
+  95%  { opacity: 0.12; }
+  100% { transform: translateY(-20vh) rotate(var(--rot-end)) scale(1.05); opacity: 0; }
+}
+.loading-center {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.loading-brand-emoji {
+  font-size: 52px;
+  animation: loadingPulse 2s ease-in-out infinite;
+}
+@keyframes loadingPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%       { transform: scale(1.08); opacity: 1; }
+}
+.loading-brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #F5F0E8;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.loading-brand-tagline {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #4A7C59;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+.loading-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.loading-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #2D5A3D;
+  animation: loadingDots 1.4s ease-in-out infinite;
+}
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes loadingDots {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40%           { transform: scale(1); opacity: 1; }
+}
+.loading-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #4A7C59;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
 </style>
 </head>
 <body>
@@ -1474,7 +1573,7 @@ function resetAll() {
 // ─────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', loadCatalog);
+// loadCatalog is now called via loadCatalogWithLoading below
 </script>
 </body>
 </html>
