@@ -66,11 +66,11 @@ header{background:var(--white);border-bottom:1px solid var(--border);position:st
 .card-badge{position:absolute;top:10px;left:10px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
 .badge-bestseller{background:var(--gold);color:var(--forest);}
 .badge-outofstock{background:#e0e0e0;color:#888;}
-.card-body{padding:14px 16px 16px;}
+.card-body{display:flex;flex-direction:column;padding:14px 16px 16px;}
 .card-category{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);font-weight:500;margin-bottom:6px;}
-.card-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--forest);line-height:1.35;margin-bottom:10px;}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:500;color:var(--forest);line-height:1.35;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;height:calc(17px * 1.35 * 4);}
 .card-volume{font-size:11px;font-weight:600;color:var(--sage);letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;}
-.card-status{display:flex;align-items:center;gap:6px;font-size:12px;}
+.card-status{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:auto;}
 .status-dot{width:7px;height:7px;border-radius:50%;}
 .status-dot.in{background:var(--success);}
 .status-dot.out{background:#ccc;}
