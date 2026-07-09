@@ -461,6 +461,16 @@ async function submitOrder(){
 }
 function resetAll(){cart=[];updateCartUI();closeOrderForm();document.getElementById('orderFormContent').style.display='';document.getElementById('successScreen').classList.remove('show');['fieldName','fieldContact','fieldAddress'].forEach(id=>document.getElementById(id).value='');renderCatalog(products);}
 document.addEventListener('DOMContentLoaded',loadCatalog);
+
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;transition:transform 0.3s ease;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.25);';document.body.appendChild(t);}
+  t.textContent=msg;
+  t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(function(){t.style.transform='translateX(-50%) translateY(80px)';},2500);
+}
+  
 </script>
 </body>
 </html>
