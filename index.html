@@ -6,6 +6,386 @@
 <title>Botanic Hearth × BRND.ME — Influencer Gifting</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+
+<!-- ── CSS ─────────────────────────────────────────────────── -->
+<style>
+/* AI Stylist trigger button */
+.ai-trigger {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  letter-spacing: 0.2px;
+}
+.ai-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  background: #222;
+}
+.ai-trigger-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #66FCF1;
+  animation: ai-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes ai-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+ 
+/* AI Panel overlay */
+.ai-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 300;
+  backdrop-filter: blur(3px);
+}
+.ai-overlay.open { display: block; }
+ 
+/* AI Panel drawer */
+.ai-panel {
+  position: fixed;
+  top: 0; right: -520px;
+  width: 500px;
+  max-width: 95vw;
+  height: 100vh;
+  background: #0E1117;
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.4);
+}
+.ai-panel.open { right: 0; }
+ 
+/* Panel header */
+.ai-panel-head {
+  padding: 22px 28px;
+  border-bottom: 1px solid #1E2733;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.ai-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ai-panel-title-text {
+  font-family: 'Syne', 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #E8EDF2;
+  letter-spacing: -0.3px;
+}
+.ai-panel-subtitle {
+  font-size: 11px;
+  color: #6B7A8D;
+  margin-top: 2px;
+}
+.ai-panel-close {
+  background: none;
+  border: none;
+  color: #6B7A8D;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.ai-panel-close:hover { color: #E8EDF2; }
+ 
+/* Panel body scroll area */
+.ai-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+ 
+/* Input form */
+.ai-form-group {
+  margin-bottom: 16px;
+}
+.ai-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #90AEAD;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.ai-input, .ai-select, .ai-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  background: #171D26;
+  border: 1px solid #1E2733;
+  border-radius: 8px;
+  color: #E8EDF2;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.ai-input:focus, .ai-select:focus, .ai-textarea:focus {
+  border-color: #66FCF1;
+}
+.ai-textarea { resize: none; min-height: 72px; line-height: 1.5; }
+.ai-select option { background: #171D26; }
+ 
+/* Row of two selects */
+.ai-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+ 
+/* Generate button */
+.ai-generate-btn {
+  width: 100%;
+  padding: 14px;
+  background: #E64833;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: background 0.2s, transform 0.15s;
+  margin-top: 8px;
+}
+.ai-generate-btn:hover:not(:disabled) {
+  background: #d03e2a;
+  transform: translateY(-1px);
+}
+.ai-generate-btn:disabled {
+  background: #1E2733;
+  color: #6B7A8D;
+  cursor: not-allowed;
+  transform: none;
+}
+ 
+/* Loading state */
+.ai-loading {
+  display: none;
+  text-align: center;
+  padding: 32px 20px;
+}
+.ai-loading.show { display: block; }
+.ai-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #1E2733;
+  border-top-color: #66FCF1;
+  border-radius: 50%;
+  animation: ai-spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+.ai-loading-text {
+  font-size: 13px;
+  color: #6B7A8D;
+  line-height: 1.6;
+}
+.ai-loading-text span {
+  display: block;
+  color: #90AEAD;
+  font-size: 11px;
+  margin-top: 4px;
+}
+ 
+/* Results area */
+.ai-results { display: none; margin-top: 24px; }
+.ai-results.show { display: block; }
+ 
+.ai-results-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ai-results-divider-line {
+  flex: 1; height: 1px; background: #1E2733;
+}
+.ai-results-divider-text {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6B7A8D;
+  white-space: nowrap;
+}
+ 
+/* Product recommendation cards */
+.ai-product-card {
+  background: #171D26;
+  border: 1px solid #1E2733;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ai-product-card:hover {
+  border-color: #66FCF1;
+  background: #1A2535;
+}
+.ai-product-img {
+  width: 56px; height: 56px;
+  border-radius: 8px;
+  background: #222C38;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 22px;
+}
+.ai-product-img img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+.ai-product-info { flex: 1; min-width: 0; }
+.ai-product-category {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #66FCF1;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ai-product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #E8EDF2;
+  line-height: 1.3;
+  margin-bottom: 5px;
+}
+.ai-product-reason {
+  font-size: 11px;
+  color: #6B7A8D;
+  line-height: 1.5;
+}
+.ai-add-btn {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid #1E2733;
+  border-radius: 6px;
+  color: #90AEAD;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.ai-add-btn:hover {
+  border-color: #66FCF1;
+  color: #66FCF1;
+  background: rgba(102,252,241,0.05);
+}
+.ai-add-btn.added {
+  border-color: #1A4D30;
+  color: #4AAD7A;
+  background: rgba(74,173,122,0.08);
+}
+ 
+/* Reel ideas section */
+.ai-reel-section { margin-top: 20px; }
+.ai-reel-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #90AEAD;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.ai-reel-card {
+  background: #171D26;
+  border: 1px solid #1E2733;
+  border-left: 3px solid #E64833;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.ai-reel-hook {
+  font-size: 13px;
+  font-weight: 600;
+  color: #E8EDF2;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+.ai-reel-desc {
+  font-size: 11px;
+  color: #6B7A8D;
+  line-height: 1.55;
+}
+.ai-reel-format {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 9px;
+  background: #1E2733;
+  border-radius: 100px;
+  font-size: 10px;
+  color: #90AEAD;
+  letter-spacing: 0.5px;
+}
+ 
+/* Reset link */
+.ai-reset {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #6B7A8D;
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
+}
+.ai-reset:hover { color: #90AEAD; }
+ 
+/* Error state */
+.ai-error {
+  display: none;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #E87070;
+  line-height: 1.5;
+}
+.ai-error.show { display: block; }
+ 
+@media(max-width: 520px) {
+  .ai-panel { width: 100vw; right: -100vw; }
+  .ai-trigger { bottom: 20px; right: 20px; padding: 11px 16px; font-size: 12px; }
+}
+</style>
+  
 :root{--forest:#1A3D2B;--sage:#7A9E7E;--leaf:#4A7C59;--cream:#F7F4EF;--card:#EDE8DF;--gold:#C9A84C;--text:#2C2C2C;--muted:#7A7A6E;--white:#FFFFFF;--border:#D8D3C8;--success:#2E7D5E;--r:6px;}
 *{-webkit-tap-highlight-color:transparent;}button,a{touch-action:manipulation;}input,textarea,select{font-size:16px!important;}body{-webkit-text-size-adjust:100%;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}
@@ -471,6 +851,305 @@ function showToast(msg){
   t._timer=setTimeout(function(){t.style.transform='translateX(-50%) translateY(80px)';},2500);
 }
   
+<!-- ── JS — place before closing </script> ──────────────────── -->
+<script>
+// ── AI PANEL STATE ─────────────────────────────────────────
+var aiPanelOpen = false;
+ 
+function openAIPanel()  {
+  document.getElementById('aiPanel').classList.add('open');
+  document.getElementById('aiOverlay').classList.add('open');
+  aiPanelOpen = true;
+}
+function closeAIPanel() {
+  document.getElementById('aiPanel').classList.remove('open');
+  document.getElementById('aiOverlay').classList.remove('open');
+  aiPanelOpen = false;
+}
+ 
+function resetAIPanel() {
+  document.getElementById('aiForm').style.display    = 'block';
+  document.getElementById('aiResults').classList.remove('show');
+  document.getElementById('aiLoading').classList.remove('show');
+  document.getElementById('aiError').classList.remove('show');
+  document.getElementById('aiGenerateBtn').disabled = false;
+  document.getElementById('aiGenerateBtn').textContent = 'Generate My Picks & Reel Ideas →';
+}
+ 
+// ── MAIN RECOMMENDATION FUNCTION ───────────────────────────
+async function generateRecommendations() {
+  var niche    = document.getElementById('aiNiche').value;
+  var style    = document.getElementById('aiStyle').value;
+  var audience = document.getElementById('aiAudience').value;
+  var audDesc  = document.getElementById('aiAudienceDesc').value.trim();
+  var extra    = document.getElementById('aiExtra').value.trim();
+ 
+  if (!niche || !style || !audience) {
+    document.getElementById('aiError').textContent = 'Please fill in your niche, content style and audience size.';
+    document.getElementById('aiError').classList.add('show');
+    return;
+  }
+  document.getElementById('aiError').classList.remove('show');
+ 
+  // Hide form, show loading
+  document.getElementById('aiForm').style.display = 'none';
+  document.getElementById('aiLoading').classList.add('show');
+  document.getElementById('aiResults').classList.remove('show');
+  document.getElementById('aiGenerateBtn').disabled = true;
+ 
+  // Build product catalog summary for the prompt
+  // Use the existing `products` array already loaded on the page
+  var catalogSummary = (typeof products !== 'undefined' ? products : [])
+    .filter(function(p) { return p.inStock; })
+    .slice(0, 40) // limit context
+    .map(function(p, i) {
+      return (i+1) + '. EAN:' + p.ean +
+             ' | ' + (p.shortTitle || p.title) +
+             ' | Category: ' + (p.category || 'General') +
+             (p.volume ? ' | ' + p.volume : '');
+    }).join('\n');
+ 
+  var brandName = (typeof products !== 'undefined' && products.length > 0)
+    ? (products[0].brand || 'the brand')
+    : 'the brand';
+ 
+  var prompt =
+    'You are an expert influencer marketing strategist. An influencer wants to collaborate with ' + brandName + '.' +
+    '\n\nINFLUENCER PROFILE:' +
+    '\n- Content Niche: ' + niche +
+    '\n- Content Style: ' + style +
+    '\n- Audience Size: ' + audience +
+    (audDesc ? '\n- Audience Description: ' + audDesc : '') +
+    (extra   ? '\n- Additional info: '       + extra   : '') +
+    '\n\nBRAND CATALOG (in-stock products):' +
+    '\n' + catalogSummary +
+    '\n\nTASK: Based on the influencer profile, recommend exactly 3-4 products from the catalog above that best match their content style and audience. Then suggest exactly 3 creative reel ideas tailored to this influencer.' +
+    '\n\nRespond ONLY in this exact JSON format, no other text:' +
+    '\n{' +
+    '\n  "products": [' +
+    '\n    { "ean": "exact EAN from catalog", "reason": "2 sentence explanation why this fits their profile and audience" }' +
+    '\n  ],' +
+    '\n  "reels": [' +
+    '\n    { "hook": "Attention-grabbing reel hook/title (max 10 words)", "description": "2-3 sentence reel concept description", "format": "one of: Tutorial / GRWM / Review / Day-in-my-life / Transformation / Storytelling" }' +
+    '\n  ]' +
+    '\n}';
+ 
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+ 
+    if (!response.ok) throw new Error('API error ' + response.status);
+ 
+    var data = await response.json();
+    var text = data.content && data.content[0] ? data.content[0].text : '';
+ 
+    // Parse JSON from response
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse recommendations.');
+    var result = JSON.parse(jsonMatch[0]);
+ 
+    // Render results
+    renderAIResults(result);
+ 
+  } catch (err) {
+    document.getElementById('aiForm').style.display = 'block';
+    document.getElementById('aiLoading').classList.remove('show');
+    document.getElementById('aiError').textContent =
+      'Something went wrong: ' + (err.message || 'Please try again.');
+    document.getElementById('aiError').classList.add('show');
+    document.getElementById('aiGenerateBtn').disabled = false;
+  }
+}
+ 
+// ── RENDER RESULTS ──────────────────────────────────────────
+function renderAIResults(result) {
+  document.getElementById('aiLoading').classList.remove('show');
+ 
+  var productCards = '';
+  var allProds = typeof products !== 'undefined' ? products : [];
+ 
+  (result.products || []).forEach(function(rec) {
+    var p = allProds.find(function(x) { return x.ean === rec.ean; });
+    if (!p) return;
+    var inCart   = cart && cart.some(function(c) { return c.ean === p.ean; });
+    var imgHtml  = p.image
+      ? '<img src="' + p.image + '" alt="' + (p.shortTitle||p.title) + '" style="width:100%;height:100%;object-fit:contain;">'
+      : '✨';
+    productCards +=
+      '<div class="ai-product-card">' +
+        '<div class="ai-product-img">' + imgHtml + '</div>' +
+        '<div class="ai-product-info">' +
+          '<div class="ai-product-category">' + (p.category || '') + '</div>' +
+          '<div class="ai-product-name">' + (p.shortTitle || p.title) + '</div>' +
+          '<div class="ai-product-reason">' + (rec.reason || '') + '</div>' +
+        '</div>' +
+        '<button class="ai-add-btn' + (inCart ? ' added' : '') + '" ' +
+          'onclick="aiAddToCart('' + p.ean + '',this)">' +
+          (inCart ? '✓ Added' : '+ Add') +
+        '</button>' +
+      '</div>';
+  });
+ 
+  if (!productCards) productCards = '<p style="color:#6B7A8D;font-size:13px;">No matching products found. Try adjusting your profile details.</p>';
+  document.getElementById('aiProductCards').innerHTML = productCards;
+ 
+  var reelCards = '';
+  (result.reels || []).forEach(function(reel) {
+    reelCards +=
+      '<div class="ai-reel-card">' +
+        '<div class="ai-reel-hook">' + (reel.hook || '') + '</div>' +
+        '<div class="ai-reel-desc">' + (reel.description || '') + '</div>' +
+        '<span class="ai-reel-format">' + (reel.format || 'Reel') + '</span>' +
+      '</div>';
+  });
+  document.getElementById('aiReelCards').innerHTML = reelCards;
+ 
+  document.getElementById('aiResults').classList.add('show');
+}
+ 
+// ── ADD TO CART FROM AI PANEL ───────────────────────────────
+function aiAddToCart(ean, btn) {
+  addToCart(ean); // uses existing portal addToCart function
+  btn.classList.add('added');
+  btn.textContent = '✓ Added';
+}
 </script>
+
+
+</script>
+
+
+<!-- ── HTML — place before </body> ─────────────────────────── -->
+ 
+<!-- AI Trigger Button -->
+<button class="ai-trigger" onclick="openAIPanel()">
+  <span class="ai-trigger-dot"></span>
+  AI Stylist
+</button>
+ 
+<!-- AI Panel Overlay -->
+<div class="ai-overlay" id="aiOverlay" onclick="closeAIPanel()"></div>
+ 
+<!-- AI Panel -->
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-panel-head">
+    <div class="ai-panel-title">
+      <div>
+        <div class="ai-panel-title-text">✦ AI Stylist</div>
+        <div class="ai-panel-subtitle">Personalised picks + reel ideas for you</div>
+      </div>
+    </div>
+    <button class="ai-panel-close" onclick="closeAIPanel()">✕</button>
+  </div>
+ 
+  <div class="ai-panel-body">
+ 
+    <!-- Input Form -->
+    <div id="aiForm">
+      <div class="ai-form-group">
+        <label class="ai-label">Your content niche</label>
+        <select class="ai-select" id="aiNiche">
+          <option value="">Select your niche...</option>
+          <option>Lifestyle & Daily Routine</option>
+          <option>Beauty & Skincare</option>
+          <option>Fitness & Wellness</option>
+          <option>Fashion & OOTD</option>
+          <option>Food & Nutrition</option>
+          <option>Travel & Experiences</option>
+          <option>Motherhood & Family</option>
+          <option>Health & Mindfulness</option>
+          <option>Home & Interiors</option>
+          <option>Business & Personal Growth</option>
+        </select>
+      </div>
+ 
+      <div class="ai-row">
+        <div class="ai-form-group">
+          <label class="ai-label">Content style</label>
+          <select class="ai-select" id="aiStyle">
+            <option value="">Select style...</option>
+            <option>Aesthetic & Editorial</option>
+            <option>Raw & Authentic</option>
+            <option>Educational & How-to</option>
+            <option>Entertaining & Humorous</option>
+            <option>Inspirational & Motivational</option>
+            <option>Review & Honest Opinion</option>
+            <option>Day-in-my-life / Vlog</option>
+          </select>
+        </div>
+        <div class="ai-form-group">
+          <label class="ai-label">Audience size</label>
+          <select class="ai-select" id="aiAudience">
+            <option value="">Select range...</option>
+            <option>Nano (1K – 10K)</option>
+            <option>Micro (10K – 50K)</option>
+            <option>Mid-tier (50K – 200K)</option>
+            <option>Macro (200K – 1M)</option>
+            <option>Mega (1M+)</option>
+          </select>
+        </div>
+      </div>
+ 
+      <div class="ai-form-group">
+        <label class="ai-label">Describe your audience (optional)</label>
+        <textarea class="ai-textarea" id="aiAudienceDesc"
+          placeholder="e.g. Young women aged 22–35 in UAE, interested in self-care, clean beauty and wellness routines..."></textarea>
+      </div>
+ 
+      <div class="ai-form-group">
+        <label class="ai-label">Anything specific you want to highlight?</label>
+        <textarea class="ai-textarea" id="aiExtra" style="min-height:56px;"
+          placeholder="e.g. I focus on natural ingredients, I do mostly morning routine content..."></textarea>
+      </div>
+ 
+      <button class="ai-generate-btn" id="aiGenerateBtn" onclick="generateRecommendations()">
+        Generate My Picks &amp; Reel Ideas →
+      </button>
+    </div>
+ 
+    <!-- Loading -->
+    <div class="ai-loading" id="aiLoading">
+      <div class="ai-spinner"></div>
+      <div class="ai-loading-text">
+        Analysing your profile...
+        <span>Matching with catalog &amp; crafting reel ideas</span>
+      </div>
+    </div>
+ 
+    <!-- Error -->
+    <div class="ai-error" id="aiError"></div>
+ 
+    <!-- Results -->
+    <div class="ai-results" id="aiResults">
+      <div class="ai-results-divider">
+        <div class="ai-results-divider-line"></div>
+        <div class="ai-results-divider-text">Your personalised picks</div>
+        <div class="ai-results-divider-line"></div>
+      </div>
+      <div id="aiProductCards"></div>
+ 
+      <div class="ai-reel-section">
+        <div class="ai-results-divider">
+          <div class="ai-results-divider-line"></div>
+          <div class="ai-results-divider-text">Reel ideas for you</div>
+          <div class="ai-results-divider-line"></div>
+        </div>
+        <div id="aiReelCards"></div>
+      </div>
+ 
+      <button class="ai-reset" onclick="resetAIPanel()">← Start over</button>
+    </div>
+ 
+  </div>
+</div>
+
+
 </body>
 </html>
