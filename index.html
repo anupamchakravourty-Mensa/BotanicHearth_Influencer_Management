@@ -371,6 +371,12 @@ footer span{color:var(--gold);}
 </div>
 <footer><p>Botanic Hearth · <span>BRND.ME</span> Influencer Gifting Program · Powered by Nature</p></footer>
 <script>
+const MASTER_WEBAPP        = 'https://script.google.com/macros/s/AKfycbz4-.../exec';
+const TOKEN_KEY            = 'brndme_token';
+const USER_KEY             = 'brndme_user';
+const HUB_URL              = 'https://brndme-hub.vercel.app/';
+const THIS_BRAND           = 'Botanic Hearth';  // change per brand
+const THIS_BRAND_SHEET_ID  = '1znEEtFTV8SvokWkmJ9GQOswxunpwIFiiU9lkXgUsisM'; // change per brand
 const SHEET_ID='1znEEtFTV8SvokWkmJ9GQOswxunpwIFiiU9lkXgUsisM';
 const API_KEY='AIzaSyDAkVIC8G7v8wrZdfvZBMzd5dpHCTMPfg4';
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbw1_qIPPzyrezIKPEBeC-g_OD73LH0WWNPWShRDwPsQn9BcmHKS6dtvTN2MWF_Ryw-c/exec';
@@ -470,7 +476,207 @@ function showToast(msg){
   clearTimeout(t._timer);
   t._timer=setTimeout(function(){t.style.transform='translateX(-50%) translateY(80px)';},2500);
 }
-  
+
+// ════════════════════════════════════════════════════════════════
+// UNIFIED CART ADDITIONS — paste this BEFORE closing </script> tag
+// in every brand portal HTML (BH, MP, VL, MF)
+//
+// Also add these constants at the top of your existing <script>:
+//   const MASTER_WEBAPP = 'https://script.google.com/macros/s/AKfycbz4-hb6A8pGFhrbmaDFRLsbE4rBsjilbOuz2ymfYCmPAm0O5EY0sDb3QzgkMmItrxJEjA/exec';
+//   const TOKEN_KEY  = 'brndme_token';
+//   const USER_KEY   = 'brndme_user';
+//   const HUB_URL    = 'https://brndme-hub.vercel.app/';
+//   const THIS_BRAND = 'Botanic Hearth';          // Change per brand
+//   const THIS_BRAND_SHEET_ID = '1znEEtFTV8SvokWkmJ9GQOswxunpwIFiiU9lkXgUsisM'; // Change per brand
+// ════════════════════════════════════════════════════════════════
+
+// ── Auth state ───────────────────────────────────────────────────
+var _token = null;
+var _user  = null;
+var _cartCount = 0;
+
+// ── Check login on page load ─────────────────────────────────────
+async function checkAuthOnLoad() {
+  var savedToken = localStorage.getItem(TOKEN_KEY);
+  var savedUser  = localStorage.getItem(USER_KEY);
+  if (!savedToken) { updateLoginBar(false); return; }
+  try {
+    var res  = await fetch(MASTER_WEBAPP + '?action=validateToken&token=' + savedToken, { redirect: 'follow' });
+    var json = await res.json();
+    if (json.success && json.valid) {
+      _token = savedToken;
+      _user  = JSON.parse(savedUser);
+      await syncCartCount();
+      updateLoginBar(true);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      updateLoginBar(false);
+    }
+  } catch(e) {
+    // Offline — restore from localStorage
+    if (savedToken && savedUser) {
+      _token = savedToken;
+      _user  = JSON.parse(savedUser);
+      updateLoginBar(true);
+    } else {
+      updateLoginBar(false);
+    }
+  }
+}
+
+// ── Sync cart count from Master sheet ────────────────────────────
+async function syncCartCount() {
+  if (!_token) return;
+  try {
+    var res  = await fetch(MASTER_WEBAPP + '?action=getCart&token=' + _token, { redirect: 'follow' });
+    var json = await res.json();
+    if (json.success) {
+      // Only count items for THIS brand
+      _cartCount = (json.items || []).filter(function(i){ return i.brand === THIS_BRAND; }).length;
+      var allCount = (json.items || []).length;
+      updateFloatingCartBtn(allCount);
+    }
+  } catch(e) {}
+}
+
+// ── Login bar HTML (injected at top of page) ─────────────────────
+function updateLoginBar(loggedIn) {
+  var existing = document.getElementById('_loginBar');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = '_loginBar';
+    existing.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;padding:8px 20px;font-size:12px;display:flex;align-items:center;justify-content:space-between;transition:all 0.3s;';
+    document.body.insertBefore(existing, document.body.firstChild);
+    // Push content down
+    var firstEl = document.querySelector('.announce') || document.querySelector('header');
+    if (firstEl) firstEl.style.marginTop = '36px';
+  }
+  if (loggedIn && _user) {
+    existing.style.background = '#0F2D1A';
+    existing.style.borderBottom = '1px solid rgba(200,255,0,0.2)';
+    existing.innerHTML =
+      '<span style="color:#C8FF00;font-weight:600;">✓ Logged in as ' + _user.displayName + '</span>' +
+      '<span style="color:rgba(200,255,0,0.6);font-size:11px">Add products to shared cart · <a href="' + HUB_URL + '" style="color:#C8FF00;text-decoration:none;font-weight:600">Go to Hub to checkout →</a></span>';
+  } else {
+    existing.style.background = '#1A0A0A';
+    existing.style.borderBottom = '1px solid rgba(240,90,64,0.2)';
+    existing.innerHTML =
+      '<span style="color:#F05A40;">Team members: login at BRND·ME Hub to add products to cart</span>' +
+      '<a href="' + HUB_URL + '" style="color:#F05A40;font-size:11px;font-weight:600;text-decoration:none;">Login at Hub →</a>';
+  }
+}
+
+// ── Floating cart button ─────────────────────────────────────────
+function updateFloatingCartBtn(totalCount) {
+  var btn = document.getElementById('_floatingCart');
+  if (!btn) {
+    btn = document.createElement('a');
+    btn.id = '_floatingCart';
+    btn.href = HUB_URL;
+    btn.style.cssText = 'position:fixed;bottom:28px;right:28px;z-index:300;display:none;align-items:center;gap:8px;background:#0A0A0A;border:1px solid #2A2A2A;color:#F0EBE3;padding:10px 16px;border-radius:100px;font-family:inherit;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.2s;';
+    btn.innerHTML = '🛒 <span id="_fcLabel">Cart</span> <span id="_fcBadge" style="background:#C8FF00;color:#0A0A0A;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;">0</span>';
+    btn.addEventListener('mouseenter', function(){ this.style.background='#1A1A1A'; this.style.borderColor='#C8FF00'; });
+    btn.addEventListener('mouseleave', function(){ this.style.background='#0A0A0A'; this.style.borderColor='#2A2A2A'; });
+    document.body.appendChild(btn);
+  }
+  if (_token) {
+    btn.style.display = 'flex';
+    document.getElementById('_fcBadge').textContent = totalCount;
+    document.getElementById('_fcLabel').textContent = 'Cart (' + THIS_BRAND.split(' ')[0] + ')';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+// ── Override addToCart to write to Master sheet ──────────────────
+// Call this INSTEAD of the existing addToCart when user is logged in
+async function addToCartShared(ean) {
+  if (!_token) {
+    showToast('Please login at BRND\u00B7ME Hub to add products to cart.');
+    setTimeout(function(){ window.location.href = HUB_URL; }, 1500);
+    return;
+  }
+
+  var p = products.find(function(x){ return x.ean === ean; });
+  if (!p || !p.inStock) return;
+
+  // Check per-brand limit (4 per brand)
+  if (_cartCount >= 4) {
+    showToast('Maximum 4 products per brand. Remove a product to add another.');
+    return;
+  }
+
+  try {
+    var res  = await fetch(MASTER_WEBAPP, {
+      method: 'POST', redirect: 'follow',
+      body: JSON.stringify({
+        action:        'addToCart',
+        token:         _token,
+        brand:         THIS_BRAND,
+        brandSheetId:  THIS_BRAND_SHEET_ID,
+        ean:           p.ean,
+        asin:          p.asin || '',
+        sku:           p.sku  || '',
+        category:      p.category || '',
+        title:         p.shortTitle || p.title || '',
+        image:         p.image || '',
+        cogs:          p.cogs || 0,
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    var json = await res.json();
+    if (json.success) {
+      _cartCount++;
+      updateFloatingCartBtn(json.totalItems || _cartCount);
+      showToast('\u2713 Added to shared cart \u2014 checkout at BRND\u00B7ME Hub');
+      // Update card button
+      var cards = document.querySelectorAll('.product-card');
+      cards.forEach(function(card) {
+        var btn = card.querySelector('.card-action');
+        if (btn && card.innerHTML.indexOf(ean) !== -1) {
+          btn.textContent = '\u2713 Added';
+        }
+      });
+    } else {
+      showToast(json.error || 'Could not add to cart', 'err');
+    }
+  } catch(e) {
+    showToast('Error adding to cart: ' + e.message);
+  }
+}
+
+// ── Patch quickAdd and addToCartFromModal ─────────────────────────
+// These replace the existing functions when page loads
+window.quickAdd = function(ean) {
+  if (_token) {
+    addToCartShared(ean);
+  } else {
+    showToast('Login at BRND\u00B7ME Hub to place orders');
+    setTimeout(function(){ window.open(HUB_URL, '_blank'); }, 1200);
+  }
+};
+
+window.addToCartFromModal = function() {
+  if (!currentProduct) return;
+  if (_token) {
+    addToCartShared(currentProduct.ean);
+    closeModal();
+  } else {
+    showToast('Login at BRND\u00B7ME Hub to place orders');
+    setTimeout(function(){ window.open(HUB_URL, '_blank'); }, 1200);
+  }
+};
+
+// Disable the order form entirely — orders placed at hub
+window.openOrderForm = function() {
+  showToast('Please go to BRND\u00B7ME Hub to checkout your cart');
+  setTimeout(function(){ window.location.href = HUB_URL; }, 1200);
+};
+
+// ── Run on DOM ready ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+
 </script>
 </body>
 </html>
