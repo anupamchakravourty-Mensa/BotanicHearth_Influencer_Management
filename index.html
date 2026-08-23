@@ -384,21 +384,60 @@ const CATALOG_SHEET='Catalog_Master';
 let products=[],cart=[],activeFilter='all',currentProduct=null;
 function hideLoader(){const o=document.getElementById('loadingOverlay');o.classList.add('hidden');setTimeout(()=>{o.style.display='none';},750);}
 async function loadCatalog(){const minDelay=new Promise(r=>setTimeout(r,3000));const catalogLoad=fetchCatalog();await Promise.all([minDelay,catalogLoad]);hideLoader();}
-async function fetchCatalog(){
-  try{
-    const range=encodeURIComponent(CATALOG_SHEET+'!A2:P502');
-    const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?key='+API_KEY;
-    const res=await fetch(url);const data=await res.json();
-    if(!data.values){showError('No products found.');return;}
-    products=data.values.filter(r=>r[15]&&r[15].includes('YES')).map(r=>({
-      ean:r[0]||'',brand:r[1]||'Botanic Hearth',asin:r[2]||'',sku:r[3]||'',category:r[4]||'Personal Care',
-      image:r[6]||'',title:r[7]||'',shortTitle:r[8]||r[7]||'',volume:r[9]||'',
-      availQty:parseInt(r[10])||0,stockStatus:r[11]||'',salesCount:parseInt(r[13])||0,
-      inStock:!!(r[11]&&r[11].includes('In Stock')),
-    }));
-    renderFilters();renderCatalog(products);
-    document.getElementById('catalogCount').textContent=products.filter(p=>p.inStock).length+' products available';
-  }catch(e){showError('Could not load products. Please refresh.');}
+async function fetchCatalog() {
+  try {
+    const base         = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID + '/values/';
+    const catalogRange = encodeURIComponent('Catalog_Master!A2:P502');
+    const productRange = encodeURIComponent('Product_Master!A2:J200');
+    const [catalogRes, productRes] = await Promise.all([
+      fetch(base + catalogRange + '?key=' + API_KEY),
+      fetch(base + productRange + '?key=' + API_KEY),
+    ]);
+    const catalogData = await catalogRes.json();
+    const productData = await productRes.json();
+    if (!catalogData.values) { showError('No products found.'); return; }
+    // Build COGS lookup from Product_Master (col A=EAN, col H=FSL Landed COGS)
+    const cogsMap = {};
+    if (productData.values) {
+      productData.values.forEach(function(r) {
+        const ean = (r[0] || '').toString().trim();
+        if (ean) cogsMap[ean] = parseFloat(r[7]) || 0;
+      });
+    }
+    // Build products merging both sheets
+    products = catalogData.values
+      .filter(function(r) { return r[15] && r[15].toString().toUpperCase().includes('YES'); })
+      .map(function(r) {
+        const ean            = (r[0]  || '').toString().trim();
+        const sku            = (r[3]  || '').toString().trim();
+        const stockSrc       = (r[12] || '').toString().trim();
+        const stockSourceVal = (stockSrc === 'Item Code') ? sku : ean;
+        return {
+          ean:            ean,
+          brand:          (r[1]  || '').toString().trim(),
+          asin:           (r[2]  || '').toString().trim(),
+          sku:            sku,
+          category:       (r[4]  || '').toString().trim(),
+          image:          (r[6]  || '').toString().trim(),
+          title:          (r[7]  || '').toString().trim(),
+          shortTitle:     (r[8]  || r[7] || '').toString().trim(),
+          volume:         (r[9]  || '').toString().trim(),
+          availQty:       parseInt(r[10]) || 0,
+          stockStatus:    (r[11] || '').toString().trim(),
+          stockSource:    stockSrc,
+          stockSourceVal: stockSourceVal,
+          salesCount:     parseInt(r[13]) || 0,
+          cogs:           cogsMap[ean] || 0,
+          inStock:        !!(r[11] && r[11].toString().includes('In Stock')),
+        };
+      });
+    renderFilters();
+    renderCatalog(products);
+    document.getElementById('catalogCount').textContent =
+      products.filter(function(p) { return p.inStock; }).length + ' products available';
+  } catch(e) {
+    showError('Could not load products. Please refresh.');
+  }
 }
 function showError(m){const el=document.getElementById('loadingState');if(el)el.innerHTML='<p style="color:#c0392b;font-size:14px;">'+m+'</p>';}
 function renderFilters(){const cats=['all',...new Set(products.map(p=>p.category).filter(Boolean))];document.getElementById('filterBar').innerHTML=cats.map(c=>'<button class="filter-btn '+(c==='all'?'active':'')+'" onclick="filterCatalog(\''+c+'\',this)">'+(c==='all'?'All':c)+'</button>').join('');}
@@ -740,12 +779,14 @@ async function addToCartShared(ean) {
       + '&brand='        + encodeURIComponent(THIS_BRAND)
       + '&brandSheetId=' + encodeURIComponent(THIS_BRAND_SHEET_ID)
       + '&ean='          + encodeURIComponent(p.ean)
-      + '&asin='         + encodeURIComponent(p.asin || '')
-      + '&sku='          + encodeURIComponent(p.sku  || '')
-      + '&category='     + encodeURIComponent(p.category || '')
-      + '&title='        + encodeURIComponent(p.shortTitle || p.title || '')
-      + '&image='        + encodeURIComponent(p.image || '')
-      + '&cogs='         + encodeURIComponent(p.cogs  || 0),
+      + '&asin='         + encodeURIComponent(p.asin        || '')
+      + '&sku='          + encodeURIComponent(p.sku         || '')
+      + '&category='     + encodeURIComponent(p.category    || '')
+      + '&title='        + encodeURIComponent(p.shortTitle  || p.title || '')
+      + '&image='        + encodeURIComponent(p.image       || '')
+      + '&cogs='         + encodeURIComponent(p.cogs        || 0)
+      + '&availQty='     + encodeURIComponent(p.availQty    || 0)
+      + '&stockSource='  + encodeURIComponent(p.stockSourceVal || p.stockSource || p.ean || ''),
       { redirect: 'follow', headers: { 'Accept': 'application/json' } }
     );
     var json = await res.json();
