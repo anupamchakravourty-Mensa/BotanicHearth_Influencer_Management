@@ -484,25 +484,38 @@ var _cartCount = 0; // items for THIS brand in shared cart
 
 // ── Check login on page load ─────────────────────────────────────
 async function checkAuthOnLoad() {
-  var savedToken = localStorage.getItem(TOKEN_KEY);
-  var savedUser  = localStorage.getItem(USER_KEY);
-
   // Hide original order/cart UI immediately — always
   hideOriginalOrderUI();
   injectLoginBar();
   injectFloatingCartBtn();
 
+  // Priority 1: Check URL for token passed from Hub
+  var urlParams   = new URLSearchParams(window.location.search);
+  var urlToken    = urlParams.get('token');
+
+  // Priority 2: Check localStorage on this domain
+  var savedToken  = urlToken || localStorage.getItem(TOKEN_KEY);
+  var savedUser   = localStorage.getItem(USER_KEY);
+
   if (!savedToken) { updateLoginBarState(false); return; }
 
   try {
     var res  = await fetch(
-      MASTER_WEBAPP + '?action=validateToken&token=' + savedToken,
+      MASTER_WEBAPP + '?action=validateToken&token=' + encodeURIComponent(savedToken),
       { redirect: 'follow', headers: { 'Accept': 'application/json' } }
     );
     var json = await res.json();
     if (json.success && json.valid) {
       _token = savedToken;
-      _user  = JSON.parse(savedUser);
+      _user  = { displayName: json.displayName, username: json.username, role: json.role };
+      // Save token to this domain's localStorage so next visit works without URL param
+      localStorage.setItem(TOKEN_KEY, _token);
+      localStorage.setItem(USER_KEY,  JSON.stringify(_user));
+      // Clean token from URL without page reload
+      if (urlToken) {
+        var cleanUrl = window.location.pathname + window.location.search.replace(/[?&]token=[^&]+/, '').replace(/^&/, '?');
+        window.history.replaceState({}, '', cleanUrl || window.location.pathname);
+      }
       await syncCartCount();
       updateLoginBarState(true);
     } else {
